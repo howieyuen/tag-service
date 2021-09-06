@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/howieyuen/tag-service/pkg/bapi"
+	"github.com/howieyuen/tag-service/pkg/errcode"
 	pb "github.com/howieyuen/tag-service/proto"
 )
 
@@ -20,7 +21,7 @@ func (s *TagServer) GetTagList(ctx context.Context, r *pb.GetTagListRequest) (*p
 	api := bapi.NewAPI("http://127.0.0.1:8000")
 	body, err := api.GetTagList(ctx, r.GetName())
 	if err != nil {
-		return nil, err
+		return nil, errcode.TogRPCError(errcode.ErrorGetTagListFail)
 	}
 
 	var tagList *pb.GetTagListResponse
