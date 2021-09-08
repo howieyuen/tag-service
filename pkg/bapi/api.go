@@ -32,6 +32,7 @@ func (a *API) GetTagList(ctx context.Context, name string) ([]byte, error) {
 		return nil, err
 	}
 	body, err := a.httpGet(ctx, fmt.Sprintf("%s?token=%s&name=%s", "api/v1/tags", token, name))
+	fmt.Println(string(body))
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +51,6 @@ func (a *API) httpGet(ctx context.Context, path string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(string(body))
 	return body, nil
 }
 
@@ -79,7 +79,6 @@ func (a *API) getAccessToken(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	fmt.Println(string(bytes))
 	var accessToken = AccessToken{}
 	err = json.Unmarshal(bytes, &accessToken)
 	if err != nil {

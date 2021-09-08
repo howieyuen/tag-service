@@ -22,6 +22,6 @@ message Tag {
 }
 
 message GetTagListResponse {
-  repeated Tag list = 1;
+  repeated Tag data = 1;
   Pager pager = 2;
 }
