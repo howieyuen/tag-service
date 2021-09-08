@@ -3,7 +3,9 @@ module github.com/howieyuen/tag-service
 go 1.16
 
 require (
-	github.com/soheilhy/cmux v0.1.5 // indirect
+	github.com/golang/protobuf v1.5.2
+	github.com/grpc-ecosystem/grpc-gateway v1.16.0
+	github.com/soheilhy/cmux v0.1.5
 	golang.org/x/net v0.0.0-20210907225631-ff17edfbf26d // indirect
 	golang.org/x/sys v0.0.0-20210903071746-97244b99971b // indirect
 	golang.org/x/text v0.3.7 // indirect
