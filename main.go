@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	
+	"github.com/soheilhy/cmux"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	
@@ -14,54 +15,58 @@ import (
 )
 
 var (
-	grpcPort string
-	httpPort string
+	port string
 )
 
 func init() {
-	flag.StringVar(&grpcPort, "grpc_port", "8001", "grpc port")
-	flag.StringVar(&httpPort, "http_port", "9001", "http port")
+	flag.StringVar(&port, "port", "8001", "启动端口号")
 	flag.Parse()
 }
 
-func RunHttpServer(port string) error {
+func RunHttpServer(port string) *http.Server {
 	serveMux := http.NewServeMux()
 	serveMux.HandleFunc("/ping", func(writer http.ResponseWriter, request *http.Request) {
 		_, _ = writer.Write([]byte("pong"))
 	})
-	return http.ListenAndServe("127.0.0.1:"+port, serveMux)
+	return &http.Server{
+		Addr:    ":" + port,
+		Handler: serveMux,
+	}
 }
 
-func RunGrpcServer(port string) error {
+func RunTCPServer(port string) (net.Listener, error) {
+	return net.Listen("tcp", ":"+port)
+}
+
+func RunGrpcServer() *grpc.Server {
 	s := grpc.NewServer()
 	reflection.Register(s)
 	pb.RegisterTagServiceServer(s, server.NewTagServer())
 	
-	listener, err := net.Listen("tcp", ":"+port)
-	if err != nil {
-		return err
-	}
-	return s.Serve(listener)
+	return s
 }
 
 func main() {
-	errCh := make(chan error)
-	go func() {
-		err := RunHttpServer(httpPort)
-		if err != nil {
-			errCh <- err
-		}
-	}()
+	listener, err := RunTCPServer(port)
+	if err != nil {
+		log.Fatalf("Run TCP Server err: %v", err)
+	}
 	
-	go func() {
-		err := RunGrpcServer(grpcPort)
-		if err != nil {
-			errCh <- err
-		}
-	}()
+	mux := cmux.New(listener)
+	grpcL := mux.MatchWithWriters(
+		cmux.HTTP2MatchHeaderFieldPrefixSendSettings(
+			"content-type",
+			"application/grpc"))
+	httpL := mux.Match(cmux.HTTP1Fast())
 	
-	select {
-	case err := <-errCh:
-		log.Fatalf("Run server error: %v", err)
+	grpcS := RunGrpcServer()
+	go grpcS.Serve(grpcL)
+	
+	httpS := RunHttpServer(port)
+	go httpS.Serve(httpL)
+	
+	err = mux.Serve()
+	if err != nil {
+		log.Fatalf("Run Serve err: %v", err)
 	}
 }
